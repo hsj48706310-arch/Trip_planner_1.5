@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from langgraph.graph import StateGraph, START, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
-from travel_data import TRAVEL_DESTINATIONS, THEMES, TRANSPORT_COSTS, PEOPLE_DISCOUNT_RATE
+from travel_data import TRAVEL_DESTINATIONS, THEMES, TRANSPORT_COSTS
 
 load_dotenv()
 
@@ -251,15 +251,12 @@ def cost_calculation_node(state: TravelState) -> dict:
         daily_cost = food_per_day + attraction_per_day
         accommodation_cost = 60000 * (duration - 1) if duration > 1 else 0  # 숙박비
         
-        # 인원 할인 적용
-        discount_rate = PEOPLE_DISCOUNT_RATE.get(num_people, 0.8)
-        
         # 총 비용 계산
         total_cost_per_person = (
             transport_cost + 
             (daily_cost * duration) + 
             accommodation_cost
-        ) * discount_rate
+        )
         
         total_cost = total_cost_per_person * num_people
         
@@ -270,8 +267,7 @@ def cost_calculation_node(state: TravelState) -> dict:
             "total_per_person": int(total_cost_per_person),
             "total_all_people": int(total_cost),
             "num_people": num_people,
-            "duration": duration,
-            "discount_rate": int((1 - discount_rate) * 100)
+            "duration": duration
         }
     else:
         cost_estimate = {
@@ -281,8 +277,7 @@ def cost_calculation_node(state: TravelState) -> dict:
             "total_per_person": 0,
             "total_all_people": 0,
             "num_people": num_people,
-            "duration": duration,
-            "discount_rate": 0
+            "duration": duration
         }
     
     state["cost_estimate"] = cost_estimate
@@ -296,7 +291,7 @@ def display_cost_estimate_node(state: TravelState) -> dict:
     print("\n=== 여행 비용 추정 ===\n")
     print(f"여행 인원: {cost['num_people']}명")
     print(f"여행 기간: {cost['duration']}일")
-    print(f"단체 할인: {cost['discount_rate']}%\n")
+    print()
     
     print("비용 세부사항 (1인 기준):")
     print(f"  - 교통비(왕복): ₩{cost['transport']:,}")
@@ -371,7 +366,7 @@ def final_report_node(state: TravelState) -> dict:
         cost = state["cost_estimate"]
         print(f"\n예상 총 비용: ₩{cost['total_all_people']:,}")
         print(f"  (1인당: ₩{cost['total_per_person']:,})")
-        print(f"  (단체할인: {cost['discount_rate']}%)\n")
+        print()
         print("즐거운 여행되세요! 🌍")
     else:
         print("아직 코스를 선택하지 않으셨습니다.")

@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
-from travel_data import TRAVEL_DESTINATIONS, PEOPLE_DISCOUNT_RATE
+from travel_data import TRAVEL_DESTINATIONS
 
 
 class TravelRecommendationEngine:
@@ -106,14 +106,8 @@ class CostOptimizer:
         # 숙박비
         accommodation_cost = 60000 * (duration - 1) if duration > 1 else 0
         
-        # 소계 (할인 전)
-        subtotal = transport_cost + (daily_cost * duration) + accommodation_cost
-        
-        # 할인율 적용
-        discount_rate = PEOPLE_DISCOUNT_RATE.get(num_people, 0.8)
-        
         # 최종 비용
-        total_per_person = subtotal * discount_rate
+        total_per_person = transport_cost + (daily_cost * duration) + accommodation_cost
         total_all_people = total_per_person * num_people
         
         return {
@@ -122,12 +116,7 @@ class CostOptimizer:
                 "daily_cost": daily_cost,
                 "daily_cost_total": daily_cost * duration,
                 "accommodation": accommodation_cost,
-                "subtotal_per_person": subtotal,
-            },
-            "discount": {
-                "rate": discount_rate,
-                "amount_per_person": subtotal - total_per_person,
-                "amount_total": (subtotal - total_per_person) * num_people
+                "subtotal_per_person": total_per_person,
             },
             "total": {
                 "per_person": int(total_per_person),
@@ -135,8 +124,7 @@ class CostOptimizer:
             },
             "details": {
                 "num_people": num_people,
-                "duration": duration,
-                "discount_percentage": int((1 - discount_rate) * 100)
+                "duration": duration
             }
         }
     
@@ -285,7 +273,6 @@ class RecommendationFormatter:
 📊 개요:
   - 여행 인원: {cost_estimate.get('num_people', 'N/A')}명
   - 여행 기간: {cost_estimate.get('duration', 'N/A')}일
-  - 단체 할인: {cost_estimate.get('discount_rate', 0)}%
 
 💵 비용 세부사항 (1인 기준):
   - 교통비 (왕복): ₩{cost_estimate.get('transport', 0):,}

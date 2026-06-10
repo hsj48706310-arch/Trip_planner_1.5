@@ -76,8 +76,7 @@ def demo_basic_flow():
         "daily_food_attraction": cost_detail["breakdown"]["daily_cost"],
         "accommodation": cost_detail["breakdown"]["accommodation"],
         "total_per_person": cost_detail["total"]["per_person"],
-        "total_all_people": cost_detail["total"]["total"],
-        "discount_rate": cost_detail["details"]["discount_percentage"]
+        "total_all_people": cost_detail["total"]["total"]
     })
     print(cost_report)
     

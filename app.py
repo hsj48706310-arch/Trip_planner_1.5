@@ -777,7 +777,6 @@ JSON 형식으로 다음과 같이 응답하세요:
             daily_cost = food_per_day + attraction_per_day
             accommodation_cost = 60000 * (duration - 1) if duration > 1 else 0
             
-            # 할인 제거: discount_rate = 1.0
             total_cost_per_person = transport_cost + (daily_cost * duration) + accommodation_cost
             total_cost = total_cost_per_person * num_people
             
