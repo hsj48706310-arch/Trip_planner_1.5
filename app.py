@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from travel_data import TRAVEL_DESTINATIONS, THEMES, TRANSPORT_COSTS
+from tavily_search import search_travel_info, deduplicate_results, format_tavily_context
 
 load_dotenv()
 
@@ -680,7 +681,13 @@ if st.sidebar.button("추천 받기"):
         if len(available_courses) < 2:
             st.warning(f"⚠️ 현재 '{region}' 지역에서 '{theme_preference}' 테마에 딱 맞는 코스가 2개 미만입니다. 관련 추천 코스까지 함께 보여드립니다.")
 
-        # LLM 호출
+        # ── Tavily 실시간 검색 보강 (실패 시 빈 컨텍스트로 폴백) ──────────
+        existing_names  = [c["name"] for c in available_courses]
+        tavily_raw      = search_travel_info(region, theme_preference, duration)
+        tavily_clean    = deduplicate_results(tavily_raw, existing_names)
+        tavily_context  = format_tavily_context(tavily_clean)
+
+        # ── LLM 호출 ──────────────────────────────────────────────────────
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
 
         system_prompt = """당신은 한국 여행 전문가입니다. 사용자의 선호 테마에 가장 잘 맞는 여행 코스를 추천해주세요.
@@ -705,17 +712,17 @@ JSON 형식으로 다음과 같이 응답하세요:
   ]
 }"""
 
-        user_message = f"""지역: {region}
-여행 기간: {duration}일
-인원수: {num_people}명
-선호 테마: {theme_preference}
-
-*** 주의: 선호 테마 '{theme_preference}'에만 해당하는 코스만 추천해주세요 ***
-
-이용 가능한 코스들:
-{json.dumps(available_courses, ensure_ascii=False, indent=2)}
-
-위 코스 중에서 '{theme_preference}' 테마에 정확히 맞는 코스들만 골라서 최대 5개까지 추천해주세요."""
+        tavily_section = ("\n" + tavily_context + "\n") if tavily_context else ""
+        user_message = (
+            f"지역: {region}\n"
+            f"여행 기간: {duration}일\n"
+            f"인원수: {num_people}명\n"
+            f"선호 테마: {theme_preference}\n"
+            "\n이용 가능한 코스들:\n"
+            + json.dumps(available_courses, ensure_ascii=False, indent=2)
+            + tavily_section
+            + f"\n위 코스 중에서 '{theme_preference}' 테마에 정확히 맞는 코스들만 골라서 최대 5개까지 추천해주세요."
+        )
 
         try:
             response = llm.invoke([
